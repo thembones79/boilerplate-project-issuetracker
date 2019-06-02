@@ -1,41 +1,64 @@
 /*
-*
-*
-*       Complete the API routing below
-*
-*
-*/
+ *
+ *
+ *       Complete the API routing below
+ *
+ *
+ */
 
-'use strict';
+"use strict";
 
-var expect = require('chai').expect;
-var MongoClient = require('mongodb');
-var ObjectId = require('mongodb').ObjectID;
+var expect = require("chai").expect;
+var MongoClient = require("mongodb");
+var ObjectId = require("mongodb").ObjectID;
 
-const CONNECTION_STRING = process.env.DB; //MongoClient.connect(CONNECTION_STRING, function(err, db) {});
+var express = require("express");
+var app = express();
+var bodyParser = require("body-parser");
+var cors = require("cors");
+var mongoose = require("mongoose");
 
-module.exports = function (app) {
+app.use(cors());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
-  app.route('/api/issues/:project')
-  
-    .get(function (req, res){
+var Issue = require("../model/issue");
+
+// Connect to mongoose
+mongoose.connect(process.env.DB, {
+  useNewUrlParser: true
+});
+mongoose.set("useCreateIndex", true);
+var db = mongoose.connection;
+
+module.exports = function(app) {
+  app
+    .route("/api/issues/:project")
+
+    .get(function(req, res) {
       var project = req.params.project;
-      
     })
-    
-    .post(function (req, res){
+
+    .post(function(req, res) {
       var project = req.params.project;
-      
+
+      var issue = req.body;
+      issue.created_on = new Date();
+
+      Issue.addIssue(issue, function(err, issue) {
+        if (err) {
+          res.send(err.message);
+          console.log(err);
+        }
+        res.json(issue);
+      });
     })
-    
-    .put(function (req, res){
+
+    .put(function(req, res) {
       var project = req.params.project;
-      
     })
-    
-    .delete(function (req, res){
+
+    .delete(function(req, res) {
       var project = req.params.project;
-      
     });
-    
 };
