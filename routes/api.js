@@ -37,6 +37,14 @@ module.exports = function(app) {
 
     .get(function(req, res) {
       var project = req.params.project;
+
+      Issue.getIssues(function(err, issues) {
+        if (err) {
+          res.send(err.message);
+          console.log(err);
+        }
+        res.json(issues);
+      });
     })
 
     .post(function(req, res) {
