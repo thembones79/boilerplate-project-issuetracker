@@ -64,9 +64,32 @@ module.exports = function(app) {
 
     .put(function(req, res) {
       var project = req.params.project;
+
+      var id = req.body._id;
+      var issue = req.body;
+      Issue.updateBook(
+        id,
+        issue,
+        { new: true, useFindAndModify: false },
+        function(err, issue) {
+          if (err) {
+            res.send(err.message);
+            console.log(err);
+          }
+          res.json(issue);
+        }
+      );
     })
 
     .delete(function(req, res) {
       var project = req.params.project;
+      var id = req.body._id;
+      Issue.deleteIssue(id, function(err, data) {
+        if (err) {
+          res.send(err.message);
+          console.log(err);
+        }
+        res.json(data);
+      });
     });
 };
