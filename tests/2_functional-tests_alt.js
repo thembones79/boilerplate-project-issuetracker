@@ -15,7 +15,6 @@ chai.use(chaiHttp);
 
 suite("Functional Tests", function() {
   var _id1;
-  var _id2;
 
   suite("POST /api/issues/{project} => object with issue data", function() {
     test("Every field filled in", function(done) {
@@ -172,15 +171,82 @@ suite("Functional Tests", function() {
           });
       });
 
-      test("One filter", function(done) {});
+      test("One filter", function(done) {
+        chai
+          .request(server)
+          .get("/api/issues/test")
+          .query({ status_text: "In QA" })
+          .end(function(err, res) {
+            assert.equal(res.status, 200);
+            assert.isArray(res.body);
+            assert.property(res.body[0], "issue_title");
+            assert.property(res.body[0], "issue_text");
+            assert.property(res.body[0], "created_on");
+            assert.property(res.body[0], "updated_on");
+            assert.property(res.body[0], "created_by");
+            assert.property(res.body[0], "assigned_to");
+            assert.property(res.body[0], "open");
+            assert.property(res.body[0], "status_text");
+            assert.property(res.body[0], "_id");
+            assert.equal(res.body[0].status_text, "In QA");
+            done();
+          });
+      });
 
-      test("Multiple filters (test for multiple fields you know will be in the db for a return)", function(done) {});
+      test("Multiple filters (test for multiple fields you know will be in the db for a return)", function(done) {
+        chai
+          .request(server)
+          .get("/api/issues/test")
+          .query({
+            status_text: "In QA",
+            created_by: "Functional Test - Every field filled in"
+          })
+          .end(function(err, res) {
+            assert.equal(res.status, 200);
+            assert.isArray(res.body);
+            assert.property(res.body[0], "issue_title");
+            assert.property(res.body[0], "issue_text");
+            assert.property(res.body[0], "created_on");
+            assert.property(res.body[0], "updated_on");
+            assert.property(res.body[0], "created_by");
+            assert.property(res.body[0], "assigned_to");
+            assert.property(res.body[0], "open");
+            assert.property(res.body[0], "status_text");
+            assert.property(res.body[0], "_id");
+            assert.equal(res.body[0].status_text, "In QA");
+            assert.equal(
+              res.body[0].created_by,
+              "Functional Test - Every field filled in"
+            );
+            done();
+          });
+      });
     }
   );
 
   suite("DELETE /api/issues/{project} => text", function() {
-    test("No _id", function(done) {});
+    test("No _id", function(done) {
+      chai
+        .request(server)
+        .delete("/api/issues/test")
+        .send({})
+        .end(function(err, res) {
+          assert.equal(res.status, 200);
+          assert.equal(res.text, "_id error");
+          done();
+        });
+    });
 
-    test("Valid _id", function(done) {});
+    test("Valid _id", function(done) {
+      chai
+        .request(server)
+        .delete("/api/issues/test")
+        .send({ _id: _id1 })
+        .end(function(err, res) {
+          assert.equal(res.status, 200);
+          assert.equal(res.text, "deleted " + _id1);
+          done();
+        });
+    });
   });
 });

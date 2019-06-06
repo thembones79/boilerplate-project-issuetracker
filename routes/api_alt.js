@@ -9,7 +9,6 @@
 "use strict";
 
 var expect = require("chai").expect;
-var ObjectId = require("mongodb").ObjectID;
 var mongo = require("mongodb").MongoClient;
 var url = process.env.DB;
 
@@ -19,6 +18,19 @@ module.exports = function(app) {
 
     .get(function(req, res) {
       var project = req.params.project;
+      var query = req.query;
+
+      mongo.connect(url, { useNewUrlParser: true }, function(err, client) {
+        var db = client.db("love");
+        if (err) throw err;
+        var parrots = db.collection(project);
+        parrots.find(query).toArray(function(err, docs) {
+          if (err) console.log(err);
+
+          res.json(docs);
+          client.close();
+        });
+      });
     })
 
     .post(function(req, res) {
@@ -95,5 +107,31 @@ module.exports = function(app) {
 
     .delete(function(req, res) {
       var project = req.params.project;
+      var _id = req.body._id;
+
+      if (!_id) {
+        res.send("_id error");
+      } else {
+        mongo.connect(url, { useNewUrlParser: true }, function(err, client) {
+          var db = client.db("love");
+          if (err) throw err;
+          var collection = db.collection(project);
+
+          collection.deleteOne(
+            {
+              _id
+            },
+            function(err, data) {
+              if (err) {
+                res.send("could not delete " + _id);
+                client.close();
+              } else {
+                res.send("deleted " + _id);
+                client.close();
+              }
+            }
+          );
+        });
+      }
     });
 };
