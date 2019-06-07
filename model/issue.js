@@ -37,21 +37,8 @@ var issueSchema = mongoose.Schema({
 var Issue = (module.exports = mongoose.model("Issue", issueSchema, "apitest"));
 
 // Get Issues
-module.exports.getIssues = function(callback, limit) {
-  Issue.find(callback).limit(limit);
-};
-
-// Get Issues for Selected User
-module.exports.getIssuesByQueryObject = function(obj) {
-  Issue.find(obj.queryObject, obj.callback)
-    .limit(obj.limit)
-    .sort(obj.sortingOrder)
-    .select(obj.filterObject);
-};
-
-// Get Issue
-module.exports.getIssueById = function(id, callback) {
-  Issue.findById(id, callback);
+module.exports.getIssuesByQueryObject = function(queryObject, callback) {
+  Issue.find(queryObject, callback);
 };
 
 //Add Issue
@@ -62,14 +49,11 @@ module.exports.addIssue = function(issue, callback) {
 //Update Issue
 module.exports.updateIssue = function(id, issue, options, callback) {
   var query = { _id: id };
-  var update = {
-    name: issue.name
-  };
-  Issue.findOneAndUpdate(query, update, options, callback);
+  Issue.findOneAndUpdate(query, issue, options, callback);
 };
 
 //Delete Issue
 module.exports.deleteIssue = function(id, callback) {
   var query = { _id: id };
-  Issue.remove(query, callback);
+  Issue.deleteOne(query, callback);
 };

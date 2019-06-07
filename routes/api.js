@@ -9,25 +9,8 @@
 "use strict";
 
 var expect = require("chai").expect;
-
-var express = require("express");
-var app = express();
-var bodyParser = require("body-parser");
-var cors = require("cors");
-var mongoose = require("mongoose");
-
-app.use(cors());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-
-var Issue = require("../model/issue");
-
-// Connect to mongoose
-mongoose.connect(process.env.DB, {
-  useNewUrlParser: true
-});
-mongoose.set("useCreateIndex", true);
-var db = mongoose.connection;
+var mongo = require("mongodb").MongoClient;
+var url = process.env.DB;
 
 module.exports = function(app) {
   app
@@ -35,19 +18,23 @@ module.exports = function(app) {
 
     .get(function(req, res) {
       var project = req.params.project;
+      var query = req.query;
 
-      Issue.getIssues(function(err, issues) {
-        if (err) {
-          res.send(err.message);
-          console.log(err);
-        }
-        res.json(issues);
+      mongo.connect(url, { useNewUrlParser: true }, function(err, client) {
+        var db = client.db("love");
+        if (err) throw err;
+        var collection = db.collection(project);
+        collection.find(query).toArray(function(err, docs) {
+          if (err) console.log(err);
+
+          res.json(docs);
+          client.close();
+        });
       });
     })
 
     .post(function(req, res) {
       var project = req.params.project;
-
       var issue = {
         issue_title: req.body.issue_title,
         issue_text: req.body.issue_text,
@@ -59,46 +46,92 @@ module.exports = function(app) {
         status_text: req.body.status_text || ""
       };
       if (!issue.issue_title || !issue.issue_text || !issue.created_by) {
-        res.send("missing inputs");
+        res.send("no inputs");
       } else {
-        Issue.addIssue(issue, function(err, issue) {
-          if (err) {
-            res.send(err.message);
-            console.log(err);
-          }
-          res.json(issue);
+        mongo.connect(url, { useNewUrlParser: true }, function(err, client) {
+          var db = client.db("love");
+          if (err) throw err;
+          var collection = db.collection(project);
+          collection.insertOne(issue, function(err, data) {
+            if (err) throw err;
+            console.log(JSON.stringify(issue));
+            res.json(issue);
+            client.close();
+          });
         });
       }
     })
 
     .put(function(req, res) {
       var project = req.params.project;
-
-      var id = req.body._id;
       var issue = req.body;
-      Issue.updateBook(
-        id,
-        issue,
-        { new: true, useFindAndModify: false },
-        function(err, issue) {
-          if (err) {
-            res.send(err.message);
-            console.log(err);
-          }
-          res.json(issue);
-        }
-      );
+
+      if (
+        !issue.issue_title &&
+        !issue.issue_text &&
+        !issue.created_by &&
+        !issue.status_text &&
+        !issue.assigned_to &&
+        !issue.open
+      ) {
+        res.send("no updated field sent");
+      } else {
+        mongo.connect(url, { useNewUrlParser: true }, function(err, client) {
+          var db = client.db("love");
+          if (err) throw err;
+          var collection = db.collection(project);
+
+          collection.updateOne(
+            {
+              _id: req.body._id
+            },
+            {
+              $set: {
+                updated_on: new Date(),
+                issue
+              }
+            },
+            function(err, data) {
+              if (err) {
+                res.send("could not update " + req.body._id);
+                client.close();
+              } else {
+                res.send("successfully updated");
+                client.close();
+              }
+            }
+          );
+        });
+      }
     })
 
     .delete(function(req, res) {
       var project = req.params.project;
-      var id = req.body._id;
-      Issue.deleteIssue(id, function(err, data) {
-        if (err) {
-          res.send(err.message);
-          console.log(err);
-        }
-        res.json(data);
-      });
+      var _id = req.body._id;
+
+      if (!_id) {
+        res.send("_id error");
+      } else {
+        mongo.connect(url, { useNewUrlParser: true }, function(err, client) {
+          var db = client.db("love");
+          if (err) throw err;
+          var collection = db.collection(project);
+
+          collection.deleteOne(
+            {
+              _id
+            },
+            function(err, data) {
+              if (err) {
+                res.send("could not delete " + _id);
+                client.close();
+              } else {
+                res.send("deleted " + _id);
+                client.close();
+              }
+            }
+          );
+        });
+      }
     });
 };
