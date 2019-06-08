@@ -13,7 +13,8 @@ var app = express();
 
 app.use(helmet.xssFilter());
 
-app.use("/public", express.static(process.cwd() + "/public"));
+//app.use("/public", express.static(process.cwd() + "/public"));
+app.use(express.static("public"));
 
 app.use(cors({ origin: "*" })); //For FCC testing purposes only
 
